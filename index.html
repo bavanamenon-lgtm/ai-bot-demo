@@ -1,12 +1,30 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Schindler AI Assistant</title>
+    <meta charset="UTF-8" />
+    <title>AI Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
     <style>
         body {
-            margin:0;
+            margin: 0;
             font-family: Arial, sans-serif;
+            background: #f5f6fa;
+        }
+
+        /* Optional main content (can be ignored when embedded) */
+        .page-wrapper {
+            padding: 16px;
+        }
+
+        .page-wrapper h1 {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+
+        .page-wrapper p {
+            font-size: 14px;
+            color: #555;
         }
 
         /* Floating AI Button */
@@ -18,15 +36,15 @@
             height: 60px;
             background: #4b5fff;
             border-radius: 50%;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
             cursor: pointer;
             z-index: 9999;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            color:white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
             font-size: 26px;
-            font-weight:bold;
+            font-weight: bold;
         }
 
         /* Chat Window */
@@ -35,10 +53,12 @@
             bottom: 96px;
             right: 24px;
             width: 360px;
+            max-width: 90vw;
             height: 480px;
+            max-height: 70vh;
             background: #ffffff;
             border-radius: 12px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
             display: none;
             flex-direction: column;
             z-index: 9999;
@@ -56,13 +76,15 @@
 
         /* Messages area */
         #ai-messages {
-            flex:1;
+            flex: 1;
             padding: 10px;
-            overflow-y:auto;
+            overflow-y: auto;
             font-size: 14px;
+            background: #f8f8ff;
         }
 
-        .msg-user, .msg-ai {
+        .msg-user,
+        .msg-ai {
             margin-bottom: 10px;
             max-width: 80%;
             padding: 8px 10px;
@@ -71,149 +93,182 @@
         }
 
         .msg-user {
-            background:#e8ebff;
-            margin-left:auto;
-            text-align:right;
+            background: #e8ebff;
+            margin-left: auto;
+            text-align: right;
         }
 
         .msg-ai {
-            background:#f4f6ff;
-            margin-right:auto;
+            background: #ffffff;
+            margin-right: auto;
+            border: 1px solid #e0e3ff;
         }
 
         /* Input bar */
         #ai-input-bar {
-            border-top:1px solid #ddd;
-            padding:8px;
-            display:flex;
+            border-top: 1px solid #ddd;
+            padding: 8px;
+            display: flex;
+            background: #fafafa;
         }
 
         #ai-input {
-            flex:1;
-            padding:8px;
-            border-radius:6px;
-            border:1px solid #ccc;
-            font-size:14px;
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 14px;
         }
 
         #ai-send {
-            margin-left:8px;
-            background:#4b5fff;
-            color:white;
-            border:none;
-            padding:8px 16px;
-            border-radius:6px;
-            cursor:pointer;
-            font-size:14px;
+            margin-left: 8px;
+            background: #4b5fff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        #ai-send:disabled {
+            opacity: 0.6;
+            cursor: default;
         }
     </style>
 </head>
+
 <body>
-
-<div id="ai-launcher">💬</div>
-
-<div id="ai-chat-window">
-    <div id="ai-header">Schindler AI Assistant</div>
-    <div id="ai-messages"></div>
-    <div id="ai-input-bar">
-        <input id="ai-input" type="text" placeholder="Ask Schindler AI about this page..." />
-        <button id="ai-send">Send</button>
+    <!-- Optional header text just so the standalone page isn't blank -->
+    <div class="page-wrapper">
+        <h1>AI Assistant Demo</h1>
+        <p>
+            This page hosts the floating AI assistant that you can embed inside SharePoint
+            using the <strong>Embed</strong> web part.
+        </p>
     </div>
-</div>
 
-<script>
-    // 🔒 TODO: replace this with a NEW key, not the one you shared
-    const GEMINI_API_KEY = "";
+    <!-- Floating launcher button -->
+    <div id="ai-launcher">💬</div>
 
-    const endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY;
+    <!-- Chat window -->
+    <div id="ai-chat-window">
+        <div id="ai-header">AI Assistant</div>
+        <div id="ai-messages"></div>
+        <div id="ai-input-bar">
+            <input
+                id="ai-input"
+                type="text"
+                placeholder="Ask the assistant…"
+                autocomplete="off"
+            />
+            <button id="ai-send">Send</button>
+        </div>
+    </div>
 
-    const launcher = document.getElementById("ai-launcher");
-    const chatWindow = document.getElementById("ai-chat-window");
-    const messages = document.getElementById("ai-messages");
-    const input = document.getElementById("ai-input");
-    const sendBtn = document.getElementById("ai-send");
+    <script>
+        // 🔗 Your Vercel backend URL
+        const BACKEND_URL = "https://ai-bot-backend-black.vercel.app/api/chat";
 
-    launcher.onclick = () => {
-        const show = chatWindow.style.display !== "flex";
-        chatWindow.style.display = show ? "flex" : "none";
-        chatWindow.style.flexDirection = "column";
-    };
+        const launcher = document.getElementById("ai-launcher");
+        const chatWindow = document.getElementById("ai-chat-window");
+        const messages = document.getElementById("ai-messages");
+        const input = document.getElementById("ai-input");
+        const sendBtn = document.getElementById("ai-send");
 
-    sendBtn.onclick = sendMessage;
-    input.addEventListener("keydown", e => {
-        if (e.key === "Enter") sendMessage();
-    });
+        launcher.onclick = () => {
+            const show = chatWindow.style.display !== "flex";
+            chatWindow.style.display = show ? "flex" : "none";
+            chatWindow.style.flexDirection = "column";
+        };
 
-    function addUserMessage(text) {
-        const div = document.createElement("div");
-        div.className = "msg-user";
-        div.innerText = text;
-        messages.appendChild(div);
-        messages.scrollTop = messages.scrollHeight;
-    }
+        sendBtn.onclick = sendMessage;
+        input.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
 
-    function addAIMessage(text) {
-        const div = document.createElement("div");
-        div.className = "msg-ai";
-        div.innerHTML = text.replace(/\n/g, "<br>");
-        messages.appendChild(div);
-        messages.scrollTop = messages.scrollHeight;
-    }
-
-    async function sendMessage() {
-        const text = input.value.trim();
-        if (!text) return;
-
-        addUserMessage(text);
-        input.value = "";
-
-        addAIMessage("<i>Thinking…</i>");
-
-        try {
-            const pageContext = window.location.pathname;
-
-            const prompt =
-`You are Schindler AI, an assistant embedded inside a SharePoint page.
-The current SharePoint section or path is: ${pageContext}.
-Answer in simple English, maximum 3–4 sentences.
-If the user asks about this site or this team, assume it is a Schindler internal site.
-
-User question:
-${text}`;
-
-            const body = {
-                contents: [
-                    {
-                        parts: [{ text: prompt }]
-                    }
-                ]
-            };
-
-            const res = await fetch(endpoint, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-            });
-
-            const data = await res.json();
-            const aiText =
-                data.candidates?.[0]?.content?.parts?.[0]?.text ||
-                "Sorry, I couldn't get a response from Schindler AI.";
-
-            // replace the "Thinking…" message
-            messages.removeChild(messages.lastChild);
-            addAIMessage(aiText);
-
-        } catch (err) {
-            messages.removeChild(messages.lastChild);
-            addAIMessage("Error talking to Schindler AI: " + err.message);
+        function addUserMessage(text) {
+            const div = document.createElement("div");
+            div.className = "msg-user";
+            div.innerText = text;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
         }
-    }
 
-    // Initial greeting
-    addAIMessage("Hi, I'm <b>Schindler AI</b>. Ask me anything in natural language – this is a demo assistant embedded in SharePoint.");
-</script>
+        function addAIMessage(text) {
+            const div = document.createElement("div");
+            div.className = "msg-ai";
+            div.innerHTML = text.replace(/\n/g, "<br>");
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+        }
 
+        async function sendMessage() {
+            const text = input.value.trim();
+            if (!text || sendBtn.disabled) return;
+
+            addUserMessage(text);
+            input.value = "";
+
+            const thinkingId = addThinkingMessage();
+
+            try {
+                sendBtn.disabled = true;
+
+                const pageContext = window.location.pathname;
+
+                const res = await fetch(BACKEND_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        question: text,
+                        page_context: pageContext
+                    })
+                });
+
+                const data = await res.json();
+                removeThinkingMessage(thinkingId);
+
+                const answer =
+                    data.answer ||
+                    data.error ||
+                    "Sorry, I couldn’t get a response from the assistant.";
+
+                addAIMessage(answer);
+            } catch (err) {
+                removeThinkingMessage(thinkingId);
+                addAIMessage("Error talking to AI backend: " + err.message);
+            } finally {
+                sendBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        function addThinkingMessage() {
+            const id = "thinking-" + Date.now();
+            const div = document.createElement("div");
+            div.className = "msg-ai";
+            div.id = id;
+            div.innerHTML = "<i>Thinking…</i>";
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+            return id;
+        }
+
+        function removeThinkingMessage(id) {
+            const el = document.getElementById(id);
+            if (el && el.parentNode) {
+                el.parentNode.removeChild(el);
+            }
+        }
+
+        // Initial greeting
+        addAIMessage(
+            "Hi, I'm your <b>AI Assistant</b>. Ask me anything in natural language. " +
+            "This is a demo running behind a SharePoint-embeddable page."
+        );
+    </script>
 </body>
 </html>
-  
